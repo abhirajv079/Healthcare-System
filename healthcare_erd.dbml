@@ -22,8 +22,7 @@ Table doctors {
 
 Table patients {
   id integer [pk, increment]
-  user_id integer [note: 'nullable for family/care-seeker until invited']
-  care_seeker_id integer [note: 'nullable; set when patient is a family member']
+  user_id integer [note: 'nullable until linked to user']
   name varchar [not null]
   date_of_birth date
   sex varchar [note: 'Male, Female']
@@ -34,20 +33,19 @@ Table patients {
   updated_at timestamp
 }
 
-Table care_seekers {
+Table slots {
   id integer [pk, increment]
-  added_by_user_id integer [not null]
-  name varchar [not null]
-  gender varchar [not null]
-  age integer
-  relationship varchar [note: 'self, wife, son, etc.']
-  invite_sent boolean [default: false]
+  doctor_id integer [not null]
+  slot_date date [not null]
+  slot_time time [not null]
+  max_capacity integer [not null, note: 'Max patients that can book this slot']
   created_at timestamp
   updated_at timestamp
 }
 
 Table appointments {
   id integer [pk, increment]
+  slot_id integer [not null]
   doctor_id integer [not null]
   patient_id integer [not null]
   appointment_date date [not null]
@@ -107,30 +105,6 @@ Table feedbacks {
   created_at timestamp
 }
 
-Table support_tickets {
-  id integer [pk, increment]
-  patient_id integer [not null]
-  subject varchar
-  status varchar [not null, note: 'open, resolved']
-  created_at timestamp
-  updated_at timestamp
-}
-
-Table patient_communities {
-  id integer [pk, increment]
-  doctor_id integer [not null]
-  name varchar [not null, note: 'e.g. New mothers who visit Dr. Kumar']
-  created_at timestamp
-  updated_at timestamp
-}
-
-Table patient_community_members {
-  id integer [pk, increment]
-  community_id integer [not null]
-  patient_id integer [not null]
-  joined_at timestamp
-}
-
 Table review_requests {
   id integer [pk, increment]
   doctor_id integer [not null]
@@ -141,8 +115,8 @@ Table review_requests {
 
 Ref: doctors.user_id - users.id
 Ref: patients.user_id - users.id
-Ref: patients.care_seeker_id - care_seekers.id
-Ref: care_seekers.added_by_user_id > users.id
+Ref: slots.doctor_id > doctors.id
+Ref: appointments.slot_id > slots.id
 Ref: appointments.doctor_id > doctors.id
 Ref: appointments.patient_id > patients.id
 Ref: payments.appointment_id > appointments.id
@@ -152,9 +126,5 @@ Ref: chat_messages.patient_id > patients.id
 Ref: medical_records.patient_id > patients.id
 Ref: medical_records.doctor_id > doctors.id
 Ref: feedbacks.appointment_id > appointments.id
-Ref: support_tickets.patient_id > patients.id
-Ref: patient_communities.doctor_id > doctors.id
-Ref: patient_community_members.community_id > patient_communities.id
-Ref: patient_community_members.patient_id > patients.id
 Ref: review_requests.doctor_id > doctors.id
 Ref: review_requests.patient_id > patients.id
