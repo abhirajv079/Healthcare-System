@@ -18,12 +18,24 @@ This document explains how data flows through the Healthcare System based on the
   - Stored in `patients`, optionally linked to `users` via `user_id` when the patient has their own login.
   - Holds demographic and basic health information (name, date of birth, sex, age, weight, phone).
 
+- **Availability**
+  - Stored in `availability`.
+  - Represents **when** a doctor is available (recurring weekly template), not a specific calendar slot.
+  - Key fields:
+    - `doctor_id` – which doctor this rule belongs to.
+    - `day_of_week` – 0 (Sunday) through 6 (Saturday).
+    - `start_time`, `end_time` – time window on that day.
+    - `slot_duration_minutes` – e.g. 30 for 30-minute slots (used when generating slots).
+    - `max_capacity` – max patients per slot in this window.
+    - `valid_from`, `valid_to` – optional date range for the rule.
+
 - **Slot**
   - Stored in `slots`.
-  - Represents a **time window** in which a doctor is available.
+  - Represents a **concrete bookable time** (specific date + time) for a doctor.
   - Key fields:
     - `doctor_id` – which doctor the slot belongs to.
-    - `slot_date`, `slot_time` – day and time of the slot.
+    - `availability_id` – optional; set when the slot was generated from an `availability` row.
+    - `slot_date`, `slot_time` – specific day and time.
     - `max_capacity` – maximum number of patients that can book this slot.
 
 - **Appointment**
@@ -101,19 +113,27 @@ Once created, `patients.id` is used to associate appointments, medical records, 
 
 ## 3. Doctor Availability and Slot Management
 
-### 3.1 Creating slots
+### 3.1 Storing doctor availability
 
-When a doctor configures availability:
+Doctors define their recurring weekly schedule in the **availability** table:
 
-1. UI collects desired days, times, and capacities (e.g. “Monday 10:00–12:00, 10 patients per hour”).
-2. Backend converts that into discrete slots (e.g. 10:00, 10:10, 10:20, etc., depending on slot duration logic),
-   and inserts rows into `slots`:
-   - `doctor_id = doctors.id`.
-   - `slot_date`, `slot_time`.
-   - `max_capacity` according to configuration.
-   - `created_at`, `updated_at` timestamps.
+1. UI collects for each window: day of week, start time, end time, slot duration (e.g. 30 min), and max capacity per slot.
+2. Backend inserts one row per window into `availability`:
+   - `doctor_id`, `day_of_week`, `start_time`, `end_time`.
+   - `slot_duration_minutes`, `max_capacity`.
+   - Optional `valid_from`, `valid_to` if the rule is date-limited.
+3. Example: one row = "Dr. X available every Monday 09:00–17:00, 30-min slots, 5 patients per slot". Multiple rows per doctor are allowed.
 
-### 3.2 Reading slots for booking
+Availability rows are **templates**; they do not create bookable slots by themselves.
+
+### 3.2 Generating or creating slots
+
+Slots can be created in two ways:
+
+- **From availability (recommended):** A scheduled job reads `availability` and generates concrete `slots` for future dates: for each `availability` row, compute dates matching `day_of_week`, then create slots from `start_time` to `end_time` at `slot_duration_minutes` intervals; insert into `slots` with `doctor_id`, `availability_id`, `slot_date`, `slot_time`, `max_capacity`.
+- **Manual:** Create one-off `slots` with `doctor_id`, `slot_date`, `slot_time`, `max_capacity`; leave `availability_id` null.
+
+### 3.3 Reading slots for booking
 
 To show available options:
 

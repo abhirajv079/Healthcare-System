@@ -33,9 +33,24 @@ Table patients {
   updated_at timestamp
 }
 
+Table availability {
+  id integer [pk, increment]
+  doctor_id integer [not null]
+  day_of_week integer [not null, note: '0=Sunday, 1=Monday, ..., 6=Saturday']
+  start_time time [not null]
+  end_time time [not null]
+  slot_duration_minutes integer [note: 'e.g. 30 for 30-min slots']
+  max_capacity integer [not null, note: 'Max patients per slot in this window']
+  valid_from date [note: 'optional; when this rule starts']
+  valid_to date [note: 'optional; when this rule ends']
+  created_at timestamp
+  updated_at timestamp
+}
+
 Table slots {
   id integer [pk, increment]
   doctor_id integer [not null]
+  availability_id integer [note: 'optional; set when slot was generated from availability']
   slot_date date [not null]
   slot_time time [not null]
   max_capacity integer [not null, note: 'Max patients that can book this slot']
@@ -115,7 +130,9 @@ Table review_requests {
 
 Ref: doctors.user_id - users.id
 Ref: patients.user_id - users.id
+Ref: availability.doctor_id > doctors.id
 Ref: slots.doctor_id > doctors.id
+Ref: slots.availability_id > availability.id
 Ref: appointments.slot_id > slots.id
 Ref: appointments.doctor_id > doctors.id
 Ref: appointments.patient_id > patients.id
