@@ -1,0 +1,147 @@
+Table users {
+  id integer [pk, increment]
+  email varchar [not null, unique]
+  password_hash varchar [not null]
+  role varchar [not null, note: 'admin, doctor, patient']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table doctors {
+  id integer [pk, increment]
+  user_id integer [not null, unique]
+  name varchar [not null]
+  specialization varchar [note: 'e.g. Gynacologist']
+  experience_years integer [note: 'e.g. 15']
+  achievement varchar [note: 'e.g. Gold Medalist']
+  license_number varchar
+  profile_image_url varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table patients {
+  id integer [pk, increment]
+  user_id integer [note: 'nullable until linked to user']
+  name varchar [not null]
+  date_of_birth date
+  sex varchar [note: 'Male, Female']
+  age integer
+  weight integer [note: 'e.g. kg']
+  phone varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table availability {
+  id integer [pk, increment]
+  doctor_id integer [not null]
+  day_of_week integer [not null, note: '0=Sunday, 1=Monday, ..., 6=Saturday']
+  start_time time [not null]
+  end_time time [not null]
+  slot_duration_minutes integer [note: 'e.g. 30 for 30-min slots']
+  max_capacity integer [not null, note: 'Max patients per slot in this window']
+  valid_from date [note: 'optional; when this rule starts']
+  valid_to date [note: 'optional; when this rule ends']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table slots {
+  id integer [pk, increment]
+  doctor_id integer [not null]
+  availability_id integer [note: 'optional; set when slot was generated from availability']
+  slot_date date [not null]
+  slot_time time [not null]
+  max_capacity integer [not null, note: 'Max patients that can book this slot']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table appointments {
+  id integer [pk, increment]
+  slot_id integer [not null]
+  doctor_id integer [not null]
+  patient_id integer [not null]
+  appointment_date date [not null]
+  appointment_time time [not null]
+  token_number varchar [note: 'e.g. #47']
+  visit_type varchar [note: 'first_time, report, follow_up']
+  is_family_appointment boolean [default: false]
+  status varchar [note: 'scheduled, waiting, consulted, completed, cancelled, no_show']
+  complaint text [note: 'e.g. Stomach pain, Fever']
+  ivr_app_id varchar [note: 'nullable; for IVR-planned seamless appointment']
+  cancelled_by varchar [note: 'nullable; doctor, patient, system']
+  refund_days integer [note: 'e.g. 2 when doctor cancels']
+  notes text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table payments {
+  id integer [pk, increment]
+  appointment_id integer [not null]
+  amount decimal [not null]
+  payment_type varchar [note: 'consultation_fee, refund']
+  status varchar [note: 'pending, completed, refunded']
+  paid_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table chat_messages {
+  id integer [pk, increment]
+  appointment_id integer [not null]
+  doctor_id integer [not null]
+  patient_id integer [not null]
+  sender_role varchar [not null, note: 'doctor, patient']
+  body text [not null]
+  created_at timestamp
+}
+
+Table medical_records {
+  id integer [pk, increment]
+  patient_id integer [not null]
+  doctor_id integer [not null]
+  diagnosis text
+  prescription text
+  record_date date [not null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table feedbacks {
+  id integer [pk, increment]
+  appointment_id integer [not null]
+  consulting_rating integer [note: '1-5 stars']
+  hospital_rating integer [note: '1-5 stars']
+  waiting_time_rating integer [note: '1-5 stars']
+  comment text
+  created_at timestamp
+}
+
+Table review_requests {
+  id integer [pk, increment]
+  doctor_id integer [not null]
+  patient_id integer [not null]
+  requested_at timestamp [not null]
+  reviewed_at timestamp [note: 'nullable; when user left Google review']
+}
+
+Ref: doctors.user_id - users.id
+Ref: patients.user_id - users.id
+Ref: availability.doctor_id > doctors.id
+Ref: slots.doctor_id > doctors.id
+Ref: slots.availability_id > availability.id
+Ref: appointments.slot_id > slots.id
+Ref: appointments.doctor_id > doctors.id
+Ref: appointments.patient_id > patients.id
+Ref: payments.appointment_id > appointments.id
+Ref: chat_messages.appointment_id > appointments.id
+Ref: chat_messages.doctor_id > doctors.id
+Ref: chat_messages.patient_id > patients.id
+Ref: medical_records.patient_id > patients.id
+Ref: medical_records.doctor_id > doctors.id
+Ref: feedbacks.appointment_id > appointments.id
+Ref: review_requests.doctor_id > doctors.id
+Ref: review_requests.patient_id > patients.id
