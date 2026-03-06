@@ -10,6 +10,8 @@ import { AuthModule } from './auth/auth.module';
 import { Patient } from './patients/entities/patient.entity';
 import { Doctor } from './doctors/entities/doctor.entity';
 import { OnboardingModule } from './onboarding/onboarding.module';
+import { PatientsModule } from './patients/patient.module';
+import { DoctorsModule } from './doctors/doctor.module';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }), 
@@ -22,7 +24,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     database: process.env.DB_NAME ?? 'healthcare',
     entities: [User, Patient, Doctor],
     synchronize: true,
-  }), HelloModule, UsersModule, AuthModule, OnboardingModule],
+  }), HelloModule, UsersModule, AuthModule, OnboardingModule, PatientsModule, DoctorsModule],
   controllers: [AppController],
   providers: [AppService],
 })

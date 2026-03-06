@@ -1,21 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { UsersService } from '../users/users.service';
 import { Role } from '../users/enums/role.enum';
-import { Patient } from '../patients/entities/patient.entity';
-import { Doctor } from '../doctors/entities/doctor.entity';
 import { PatientOnboardingDto } from './dto/patient-onboarding.dto';
 import { DoctorOnboardingDto } from './dto/doctor-onboarding.dto';
+import { PatientsService } from '../patients/patient.service';
+import { DoctorsService } from '../doctors/doctor.service';
 
 @Injectable()
 export class OnboardingService {
   constructor(
     private readonly usersService: UsersService,
-    @InjectRepository(Patient)
-    private readonly patientRepo: Repository<Patient>,
-    @InjectRepository(Doctor)
-    private readonly doctorRepo: Repository<Doctor>,
+    private readonly patientsService: PatientsService,
+    private readonly doctorsService: DoctorsService,
   ) {}
 
   async onboardPatient(userId: number, dto: PatientOnboardingDto) {
@@ -29,7 +25,7 @@ export class OnboardingService {
 
     const updatedUser = await this.usersService.updateRole(user.id, Role.PATIENT);
 
-    const patient = this.patientRepo.create({
+    const patient = await this.patientsService.create({
       userId: user.id,
       name: dto.name,
       dateOfBirth: dto.dateOfBirth ?? null,
@@ -38,9 +34,8 @@ export class OnboardingService {
       weight: dto.weight ?? null,
       phone: dto.phone ?? null,
     });
-    const savedPatient = await this.patientRepo.save(patient);
 
-    return { user: updatedUser, patient: savedPatient };
+    return { user: updatedUser, patient };
   }
 
   async onboardDoctor(userId: number, dto: DoctorOnboardingDto) {
@@ -54,7 +49,7 @@ export class OnboardingService {
 
     const updatedUser = await this.usersService.updateRole(user.id, Role.DOCTOR);
 
-    const doctor = this.doctorRepo.create({
+    const doctor = await this.doctorsService.create({
       userId: user.id,
       name: dto.name,
       specialization: dto.specialization ?? null,
@@ -63,9 +58,8 @@ export class OnboardingService {
       licenseNumber: dto.licenseNumber ?? null,
       profileImageUrl: dto.profileImageUrl ?? null,
     });
-    const savedDoctor = await this.doctorRepo.save(doctor);
 
-    return { user: updatedUser, doctor: savedDoctor };
+    return { user: updatedUser, doctor };
   }
 }
 

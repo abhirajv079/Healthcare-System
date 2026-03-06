@@ -5,9 +5,11 @@ import { Patient } from '../patients/entities/patient.entity';
 import { Doctor } from '../doctors/entities/doctor.entity';
 import { OnboardingController } from './onboarding.controller';
 import { OnboardingService } from './onboarding.service';
+import { PatientsModule } from '../patients/patient.module';
+import { DoctorsModule } from '../doctors/doctor.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Patient, Doctor]), UsersModule],
+  imports: [TypeOrmModule.forFeature([Patient, Doctor]), UsersModule, PatientsModule, DoctorsModule],
   controllers: [OnboardingController],
   providers: [OnboardingService],
 })

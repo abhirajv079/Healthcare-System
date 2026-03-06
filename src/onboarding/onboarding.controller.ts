@@ -13,6 +13,7 @@ export class OnboardingController {
 
   @Post('patient')
   async patient(@ReqUser() user: User, @Body() dto: PatientOnboardingDto) {
+    console.log('OnboardingController.patient called with user:', user.id, 'dto:', dto);
     return this.onboardingService.onboardPatient(user.id, dto);
   }
 
